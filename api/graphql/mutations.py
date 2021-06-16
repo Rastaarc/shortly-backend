@@ -152,7 +152,7 @@ class CreateShortLinkFree(graphene.Mutation):
         ok=False
         link = None
         try:
-            short = create_short_link_free()   
+            short = create_short_link_free()
             link = Links(original_link=original_link,
                          short_link=short,
                          created_by=Users.query.filter_by(username="FreeUsers").first()
