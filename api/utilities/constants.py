@@ -37,6 +37,8 @@ MESSAGES = {
     "NEW_ACCOUNT_SUCCESSFUL": "Account created successfully",
     "UNKNOWN_ERROR": "Unknown Error occurred, please try again or contact the administrator",
     "INVALID_USERNAME": "Invalid Username supplied. Please choose another one",
+    "INVALID_EMAIL": "Invalid Email supplied. Please choose another one",
+    "INVALID_PASSWORD": "Please create a valid password with minimum of 5 characters",
     "LOGIN_SUC": "Account Logged-in successfully",
     "LOGIN_ERR": "Sorry, Your username/email or password is incorrect",
     "NO_USER": "Sorry, We can't find the user with the detail(s) supplied",

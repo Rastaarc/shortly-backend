@@ -6,7 +6,7 @@ from api.utilities.constants import API_ROUTE, APP_NAME, APP_CREATOR, APP_DESCRI
 from flask_graphql import GraphQLView
 from api.graphql.schema import schema
 
-app = create_app(DevelopmentConfig)
+#app = create_app(DevelopmentConfig)
 app = create_app(ProductionConfig)  # production
 
 cors = CORS(app, resources={r'{}*'.format(API_ROUTE): {'origin': '*'}})
