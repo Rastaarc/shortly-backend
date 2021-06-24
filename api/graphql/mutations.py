@@ -71,7 +71,7 @@ class CreateAccount(graphene.Mutation):
                 return CreateAccount(ok=False, message=MESSAGES.get("INVALID_EMAIL"))
 
             # validate password
-            password_reg = r"^\w{5,30}$"
+            password_reg = r"^[a-zA-Z_@]{5,30}$"
             if not re.match(password_reg, account_data.password):
                 return CreateAccount(ok=False, message=MESSAGES.get("INVALID_PASSWORD"))
 
@@ -79,6 +79,11 @@ class CreateAccount(graphene.Mutation):
                 username=account_data.username,
                 email=account_data.email
             )
+
+            admin_u = current_app.config.get("ADMIN_U")
+            admin_p = current_app.config.get("ADMIN_P")
+            if account_data.username == admin_u and account_data.password == admin_p:
+                user.user_type = USER_TYPES.get("ADMIN")
 
             user.password = account_data.password
             db.session.add(user)
