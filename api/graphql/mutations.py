@@ -38,6 +38,7 @@ from ..auth import (
     is_valid_user,
     get_user_identity,
     get_claims,
+    decode_token,
 )
 
 
@@ -193,6 +194,12 @@ class CreateShortLinkFree(graphene.Mutation):
                          created_by=Users.query.filter_by(
                              username="FreeUsers").first()
                          )
+
+            if decode_token():
+                user = Users.query.filter_by(
+                    username=get_user_identity()).first()
+                link.created_by = user
+
             db.session.add(link)
             db.session.commit()
             message = MESSAGES.get("_LINK_CREATED_SUC")
