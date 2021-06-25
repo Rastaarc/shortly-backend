@@ -25,56 +25,66 @@ from ..utilities.constants import (
     ERROR_CODES,
 )
 
+
 class ErrorObject(ObjectType):
     message = String()
     code = Int(default_value=ERROR_CODES.get("UNAUTHORIZED", 401))
 
 
-#Users
+# Users
 class UsersObject(SQLAlchemyObjectType):
     id = graphene.ID(required=True)
+
     class Meta:
         model = Users
         exclude_fields = ("password_hash",)
         interfaces = (relay.Node,)
 
-    def resolve_id(root,info):
+    def resolve_id(root, info):
         return root.id
+
 
 class LinksObject(SQLAlchemyObjectType):
     id = graphene.ID(required=True)
+
     class Meta:
         model = Links
         interfaces = (relay.Node,)
 
-    def resolve_id(root,info):
+    def resolve_id(root, info):
         return root.id
+
 
 class ClicksObject(SQLAlchemyObjectType):
     id = graphene.ID(required=True)
+
     class Meta:
         model = Clicks
         interfaces = (relay.Node,)
 
-    def resolve_id(root,info):
+    def resolve_id(root, info):
         return root.id
+
 
 class SubscriptionsObject(SQLAlchemyObjectType):
     id = graphene.ID(required=True)
+
     class Meta:
         model = Subscriptions
         interfaces = (relay.Node,)
 
-    def resolve_id(root,info):
+    def resolve_id(root, info):
         return root.id
+
 
 class UsersSubscriptionsObject(SQLAlchemyObjectType):
     id = graphene.ID(required=True)
+
     class Meta:
         model = UsersSubscriptions
         interfaces = (relay.Node,)
 
-    def resolve_id(root,info):
+    def resolve_id(root, info):
         return root.id
 
 
@@ -84,7 +94,7 @@ class UsersObject1(ObjectType):
     user_type = String(required=True)
     email = String(required=True)
     join_date = String(required=True)
-    links = List(lambda : LinksObject1)
+    links = List(lambda: LinksObject1)
 
     """
     def resolve_password(root,info):
@@ -97,9 +107,15 @@ class UsersObject1(ObjectType):
         print(links_)
         return links_
     """
+
+
 class LinksObject1(ObjectType):
     id = ID(required=True)
     original_link = String(required=True)
     short_link = String(required=True)
     created_at = String(required=True)
     created_by = Field(lambda: UsersObject1)
+
+
+class UserOverview(ObjectType):
+    pass

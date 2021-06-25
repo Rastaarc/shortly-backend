@@ -50,10 +50,15 @@ from .unions import (
     ProctectedUsers,
     ProtectedLinks,
 )
-
+# from sqlalchemy import (
+#     desc,
+#     func,
+# )
 
 #####################QUERIES############################
 ##########################################################
+
+
 class Query(ObjectType):
     node = relay.Node.Field()
     #all_users = SQLAlchemyConnectionField(UsersObject)
@@ -127,9 +132,7 @@ class Query(ObjectType):
     get_user_links = List(ProtectedLinks, user_id=Int(required=True))
 
     def resolve_get_user_links(root, info, user_id):
-        print("we get here")
         if is_valid_user(USER_TYPES.get("USER")):
-            print("and here too")
             identity = get_user_identity()
             user = Users.query.filter_by(id=int(user_id)).first()
             if not user:
@@ -142,7 +145,7 @@ class Query(ObjectType):
 
             query = LinksObject.get_query(info)
             try:
-                return query.filter_by(created_by_id=int(user_id)).all()
+                return query.filter_by(created_by_id=int(user_id)).order_by(Links.created_at.desc()).all()
             except Exception as e:
                 print(f"Get User Links Error: {e}")
                 return [ErrorObject(message=MESSAGES.get("UNKNOWN_ERROR"), code=ERROR_CODES.get("INTERNAL_ERROR"))]
