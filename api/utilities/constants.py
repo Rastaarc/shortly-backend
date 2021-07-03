@@ -24,8 +24,7 @@ ERROR_CODES = {
     "SERVICE_UNAVAILABLE": 503,
     "GATEWAY_TIMEOUT": 504,
 }
-POSTS_PER_PAGE = 9
-RANDOM_POSTS_PER_PAGE = 6
+ITEMS_PER_PAGE = 10
 
 MESSAGES = {
     "NO_ACCESS": "Sorry, you don't have access to this operation(s)",
@@ -34,6 +33,8 @@ MESSAGES = {
     "NEW_ACCOUNT_SUCCESS": "New Account created successfully",
     "NO_VALID_CREDENTIALS": "No credentials supplied, Please try again",
     "INVALID_CREDENTIALS": "Sorry! Invalid credentials supplied, Please try again",
+    "INVALID_LINK_KEYWORD": "Sorry! Invalid Link Keyword supplied, Minimum of 3 and Maximum of 30",
+    "INVALID_LINK_": "Sorry! Invalid Link supplied",
     "NEW_ACCOUNT_SUCCESSFUL": "Account created successfully",
     "UNKNOWN_ERROR": "Unknown Error occurred, please try again or contact the administrator",
     "INVALID_USERNAME": "Invalid Username supplied. Please choose another one",
@@ -53,6 +54,8 @@ MESSAGES = {
     "UPDATED_SUCC": "Record updated successfully",
     "PROFILE_SUCC": "Profile updated successfully",
     "DELETED_SUCC": "Record deleted successfully",
+    "DELETED_ERR": "Operation not successful, Failed to delete Record",
+    "NO_RECORD_TO_DELETE": "Operation not successful, No Record to delete",
     "REQUEST_JSON_MISSING": "The Required Request Json Missing",
     "INVALID_RECOVERY_KEY": "Sorry! Invalid/expired key supplied, Please provide a valid key generated for this account",
     "PASS_UPDATE_SUCC": "Congrat! your password has been updated successfully",

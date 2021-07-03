@@ -7,7 +7,10 @@ from .objects import (
     UsersObject,
     LinksObject,
     SubscriptionsObject,
-    UsersSubscriptionsObject
+    UsersSubscriptionsObject,
+    PaginatedLinksObject,
+    PaginatedUsersObject,
+    OverviewObjects,
 )
 
 
@@ -18,4 +21,9 @@ class ProctectedUsers(Union):
 
 class ProtectedLinks(Union):
     class Meta:
-        types = (LinksObject, ErrorObject)
+        types = (PaginatedLinksObject, ErrorObject)
+
+
+class ProtectedOverview(Union):
+    class Meta:
+        types = (OverviewObjects, ErrorObject)

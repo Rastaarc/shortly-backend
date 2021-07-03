@@ -23,6 +23,7 @@ from ..models import (
 )
 from ..utilities.constants import (
     ERROR_CODES,
+    ITEMS_PER_PAGE,
 )
 
 
@@ -88,6 +89,22 @@ class UsersSubscriptionsObject(SQLAlchemyObjectType):
         return root.id
 
 
+###########PAGINATED OBJECTS##############
+class PaginationObject(ObjectType):
+    page = graphene.Int(required=True)
+    per_page = graphene.Int(required=True)
+    total = graphene.Int(required=True)
+
+
+class PaginatedLinksObject(PaginationObject):
+    links = graphene.List(lambda: LinksObject)
+
+
+class PaginatedUsersObject(PaginationObject):
+    users = graphene.List(lambda: UsersObject)
+
+
+#########################################
 class UsersObject1(ObjectType):
     id = ID(required=True)
     username = String(required=True)
@@ -117,5 +134,7 @@ class LinksObject1(ObjectType):
     created_by = Field(lambda: UsersObject1)
 
 
-class UserOverview(ObjectType):
-    pass
+class OverviewObjects(ObjectType):
+    total_links = Int(required=True)
+    total_clicks = Int(required=True)
+    total_users = Int(required=True)

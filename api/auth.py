@@ -1,24 +1,19 @@
+from .models import Links, Users
 from flask import (
     request,
 )
 from functools import wraps
 from flask_graphql_auth import (
     GraphQLAuth,
-    get_raw_jwt,
-    decode_jwt,
-    verify_jwt_in_argument,
     get_jwt_data
 )
 
 from .utilities.constants import (
     USER_TYPES,
-    MESSAGES
-)
-from .graphql.objects import (
-    ErrorObject,
 )
 
 auth = GraphQLAuth()
+
 
 def decode_token():
     try:
@@ -31,13 +26,24 @@ def decode_token():
         print(f"Decode Token Error: {e}")
         return None
 
+
 def get_claims():
-    claims = decode_token().get("user_claims")
-    return claims
+    try:
+        claims = decode_token().get("user_claims")
+        return claims
+    except Exception as e:
+        print(f"Get Claims Error: {e}")
+        return None
+
 
 def get_user_identity():
-    identity = decode_token().get("identity")
-    return identity
+    try:
+        identity = decode_token().get("identity")
+        return identity
+    except Exception as e:
+        print(f"GetUserIdentity Error: {e}")
+        return None
+
 
 def is_valid_user(role):
     try:
@@ -50,5 +56,42 @@ def is_valid_user(role):
         return False
 
 
+def valid_action_role(role=USER_TYPES.get("USER")):
+    return is_valid_user(role)
 
 
+def is_admin():
+    return valid_action_role(USER_TYPES.get("ADMIN"))
+
+
+def user_loggedin():
+    return True if get_user_identity() else False
+
+
+def user_from_identity():
+    return Users.query.filter_by(username=get_user_identity()).first()
+
+
+def request_by_owner(user_id):
+    try:
+        user = user_from_identity()
+
+        return True if user.id == user_id else False
+    except Exception as e:
+        print(f"RequestByOwnerError: {e}")
+        return False
+
+
+def can_delete(id, what="link"):
+    if not user_loggedin():
+        return False
+
+    try:
+
+        if what == 'link':
+            link = Links.query.filter_by(
+                id=id, created_by_id=user_from_identity().id).first()
+            return True if link else False
+    except Exception as e:
+        print(f"CanDeleteError: {e}")
+        return False

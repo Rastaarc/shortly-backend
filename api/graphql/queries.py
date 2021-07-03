@@ -20,6 +20,8 @@ from graphene_sqlalchemy import (
 from .objects import (
     ErrorObject,
     LinksObject1,
+    OverviewObjects,
+    PaginatedLinksObject,
     UsersObject,
     UsersObject1,
     LinksObject,
@@ -42,6 +44,7 @@ from ..auth import (
     get_claims,
 )
 from ..utilities.constants import (
+    ITEMS_PER_PAGE,
     USER_TYPES,
     MESSAGES,
     ERROR_CODES,
@@ -49,6 +52,7 @@ from ..utilities.constants import (
 from .unions import (
     ProctectedUsers,
     ProtectedLinks,
+    ProtectedOverview,
 )
 # from sqlalchemy import (
 #     desc,
@@ -111,9 +115,27 @@ class Query(ObjectType):
         """TODO: UPDATE USER"""
 
     ########################LINKS########################################
-    get_all_links = List(ProtectedLinks)
+    total_links = Int(required=True, user_id=Int())
 
-    def resolve_get_all_links(root, info):
+    def resolve_total_links(root, info, user_id=None):
+        total = -1
+
+        if info.context.admin():
+            if user_id:
+                total = Links.query.filter_by(created_by_id=user_id).count()
+            else:
+                total = Links.query.count()
+        elif info.context.same_user(user_id):
+            total = Links.query.filter_by(created_by_id=user_id).count()
+
+        return total
+
+    get_all_links = List(ProtectedLinks,
+                         page=ID(),
+                         per_page=ID(),
+                         search=String(),)
+
+    def resolve_get_all_links(root, info, page=None, per_page=None, search=None):
         if is_valid_user(USER_TYPES.get("USER")):
             return LinksObject.get_query(info).all()
         else:
@@ -129,25 +151,104 @@ class Query(ObjectType):
         else:
             return ErrorObject(message=MESSAGES.get("NO_ACCESS"))
 
-    get_user_links = List(ProtectedLinks, user_id=Int(required=True))
+    get_user_links = Field(ProtectedLinks,
+                           user_id=Int(required=True),
+                           page=Int(),
+                           per_page=Int(),
+                           search=String(),
+                           )
 
-    def resolve_get_user_links(root, info, user_id):
+    def resolve_get_user_links(root, info, user_id, page=None, per_page=None, search=None):
         if is_valid_user(USER_TYPES.get("USER")):
             identity = get_user_identity()
             user = Users.query.filter_by(id=int(user_id)).first()
             if not user:
-                return [ErrorObject(message=MESSAGES.get("NO_USER"), code=ERROR_CODES.get("NOT_FOUND"))]
+                return ErrorObject(message=MESSAGES.get("NO_USER"), code=ERROR_CODES.get("NOT_FOUND"))
             else:
                 role = get_claims().get('role')
                 admin = USER_TYPES.get("ADMIN")
                 if role < admin and user.username != identity:
-                    return [ErrorObject(message=MESSAGES.get("NO_ACCESS"))]
+                    return ErrorObject(message=MESSAGES.get("NO_ACCESS"))
 
-            query = LinksObject.get_query(info)
             try:
-                return query.filter_by(created_by_id=int(user_id)).order_by(Links.created_at.desc()).all()
+                if not page:
+                    page = 1
+
+                if not per_page:
+                    per_page = ITEMS_PER_PAGE
+
+                query = LinksObject.get_query(info)
+
+                result = None
+                if not search:
+                    result = query.filter_by(
+                        created_by_id=int(user_id)
+                    ).order_by(Links.created_at.desc()).paginate(page=int(page), per_page=int(per_page))
+                    # print(**result)
+                else:
+                    print(search)
+                    result = query.filter_by(created_by_id=int(user_id))
+                    result = result.filter(Links.short_link.ilike(
+                        f"%{search}%") | Links.original_link.ilike(f"%{search}%"))
+                    result = result.order_by(Links.created_at.desc()).paginate(
+                        page=int(page), per_page=int(per_page))
+
+                return PaginatedLinksObject(page=result.page,
+                                            per_page=per_page,
+                                            total=result.total,
+                                            links=result.items
+                                            )
             except Exception as e:
                 print(f"Get User Links Error: {e}")
-                return [ErrorObject(message=MESSAGES.get("UNKNOWN_ERROR"), code=ERROR_CODES.get("INTERNAL_ERROR"))]
+                return ErrorObject(message=MESSAGES.get("UNKNOWN_ERROR"), code=ERROR_CODES.get("INTERNAL_ERROR"))
         else:
-            return [ErrorObject(message=MESSAGES.get("NO_ACCESS"))]
+            return ErrorObject(message=MESSAGES.get("NO_ACCESS"))
+
+    #########################Clicks################################
+    total_clicks = Int(required=True, user_id=Int())
+
+    def resolve_total_clicks(root, info, user_id=None):
+        total = -1
+
+        if info.context.admin():
+            if user_id:
+                total = Links.query.filter_by(
+                    created_by_id=user_id).first().clicks.count()
+            else:
+                total = Clicks.query.count()
+        elif info.context.same_user(user_id):
+            total = Links.query.filter_by(
+                created_by_id=user_id).first().clicks.count()
+
+        return total
+
+    #################################DASHBOARD OVERVIEW################
+    # get_overview_counts = Field(ProtectedOverview, id=Int())
+
+    # def resolve_get_overview_counts(root, info, id=None):
+    #     if not is_valid_user(USER_TYPES.get("USER")):
+    #         return ErrorObject(message=MESSAGES.get("NO_ACCESS"))
+
+    #     identity = get_user_identity()
+    #     print(identity)
+
+    #     role = get_claims().get('role')
+    #     admin = USER_TYPES.get("ADMIN")
+    #     if not id and role == admin:
+    #         counters = {
+    #             'total_links': Links.query.count(),
+    #             'total_users': Users.query.count(),
+    #             'total_clicks': Clicks.query.count(),
+    #         }
+    #         return OverviewObjects(**counters)
+
+    #     elif id and role < admin:
+    #         user = Users.query.filter_by(username=identity).first()
+    #         counters = {
+    #             'total_links': Links.query.filtery_by(created_by_id=user.id).count(),
+    #             'total_users': 0,
+    #             'total_clicks': Links.query.filtery_by(created_by_id=user.id).clicks.count(),
+    #         }
+    #         return OverviewObjects(**counters)
+    #     else:
+    #         return ErrorObject(message=MESSAGES.get("NO_ACCESS"))
