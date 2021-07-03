@@ -8,8 +8,8 @@ from flask_graphql import GraphQLView
 from api.graphql.schema import schema
 from api.middleware import ContextMiddleware
 
-app = create_app(DevelopmentConfig)
-# app = create_app(ProductionConfig)  # production
+#app = create_app(DevelopmentConfig)
+app = create_app(ProductionConfig)  # production
 
 cors = CORS(app, resources={r'{}*'.format(API_ROUTE): {'origin': '*'}})
 
