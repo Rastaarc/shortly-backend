@@ -28,6 +28,7 @@ from ..utilities.constants import (
 from ..utilities.link import (
     create_short_link,
     create_short_link_free,
+    valid_link,
 )
 from flask_graphql_auth import (
     create_access_token,
@@ -155,8 +156,10 @@ class CreateLinkByUser(graphene.Mutation):
             print(f'Valid User Error: {e}')
 
         if valid:
-            #TODO: VALIDATE LINK(URL)###
-            if len(user_input.keyword) < 3 or len(user_input.keyword) > 30:
+            if not valid_link(user_input.link):
+                message = MESSAGES.get("INVALID_LINK_")
+                ok = False
+            elif len(user_input.keyword) < 3 or len(user_input.keyword) > 30:
                 message = MESSAGES.get("INVALID_LINK_KEYWORD")
                 ok = False
             else:
@@ -192,26 +195,30 @@ class CreateShortLinkFree(graphene.Mutation):
     def mutate(root, info, original_link):
         ok = False
         link = None
-        try:
-            short = create_short_link_free()
-            link = Links(original_link=original_link,
-                         short_link=short,
-                         created_by=Users.query.filter_by(
-                             username="FreeUsers").first()
-                         )
 
-            if decode_token():
-                user = Users.query.filter_by(
-                    username=get_user_identity()).first()
-                link.created_by = user
+        if not valid_link(original_link):
+            message = MESSAGES.get("INVALID_LINK_")
+        else:
+            try:
+                short = create_short_link_free()
+                link = Links(original_link=original_link,
+                             short_link=short,
+                             created_by=Users.query.filter_by(
+                                 username="FreeUsers").first()
+                             )
 
-            db.session.add(link)
-            db.session.commit()
-            message = MESSAGES.get("_LINK_CREATED_SUC")
-            ok = True
-        except Exception as e:
-            print(f"Error Creating Link(Free): {e}")
-            message = MESSAGES.get("_LINK_CREATED_ERR")
+                if decode_token():
+                    user = Users.query.filter_by(
+                        username=get_user_identity()).first()
+                    link.created_by = user
+
+                db.session.add(link)
+                db.session.commit()
+                message = MESSAGES.get("_LINK_CREATED_SUC")
+                ok = True
+            except Exception as e:
+                print(f"Error Creating Link(Free): {e}")
+                message = MESSAGES.get("_LINK_CREATED_ERR")
 
         return CreateShortLinkFree(link=link, ok=ok, message=message)
 
@@ -225,15 +232,15 @@ class DeleteLink(graphene.Mutation):
 
     def mutate(root, info, link_id):
         status = False
-        message = MESSAGES.get("DELETED_ERR")
-        if info.context.admin() or info.context.can_delete(link_id):
+        message = MESSAGES.get("DELETE_ERR")
+        if info.context.admin() or info.context.can_modify(link_id):
             try:
                 link = Links.query.filter_by(id=link_id).first()
                 if link:
                     db.session.delete(link)
                     db.session.commit()
                     status = True
-                    message = MESSAGES.get("DELETED_SUCC")
+                    message = MESSAGES.get("DELETE_SUCC")
                 else:
                     message = MESSAGES.get("NO_RECORD_TO_DELETE")
             except Exception as e:
@@ -243,6 +250,45 @@ class DeleteLink(graphene.Mutation):
             message = MESSAGES.get("NO_ACCESS")
 
         return DeleteLink(status=status, message=message)
+
+
+class UpdateLink(graphene.Mutation):
+    class Arguments:
+        link_id = graphene.Int(required=True)
+        o_link = graphene.String(required=True)
+        keyword = graphene.String(required=True)
+
+    message = graphene.String()
+    ok = graphene.Boolean()
+    link = graphene.Field(LinksObject)
+
+    def mutate(root, info, link_id, o_link, keyword):
+        ok = False
+        message = MESSAGES.get("UPDATE_ERR")
+        link = None
+
+        if info.context.admin() or info.context.can_modify(link_id):
+            try:
+                link_data = Links.query.filter_by(id=link_id).first()
+
+                if link_data:
+                    link_data.original_link = o_link
+                    link_data.short_link = create_short_link(keyword)
+
+                    db.session.add(link_data)
+                    db.session.commit()
+
+                    ok = True
+                    message = MESSAGES.get("UPDATE_SUCC")
+                else:
+                    message = MESSAGES.get("NO_RECORD_TO_UPDATE")
+
+            except Exception as e:
+                print(f"UpdateLinkError: {e}")
+        else:
+            message = MESSAGES.get("NO_ACCESS")
+
+        return UpdateLink(link=link, ok=ok, message=message)
 
 
 #####################MUTATIONS############################
@@ -255,3 +301,4 @@ class Mutations(graphene.ObjectType):
     create_premium_link = CreateLinkByUser.Field()
     create_freemium_link = CreateShortLinkFree.Field()
     delete_link = DeleteLink.Field()
+    update_link = UpdateLink.Field()

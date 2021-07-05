@@ -82,7 +82,7 @@ def request_by_owner(user_id):
         return False
 
 
-def can_delete(id, what="link"):
+def can_modify(id, what="link"):
     if not user_loggedin():
         return False
 

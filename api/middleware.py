@@ -6,7 +6,7 @@ from .auth import (
     is_admin,
     request_by_owner,
     user_loggedin,
-    can_delete,
+    can_modify,
 )
 
 
@@ -23,6 +23,6 @@ class ContextMiddleware(object):
         context.admin = is_admin
         context.loggedin = user_loggedin
         context.same_user = request_by_owner
-        context.can_delete = can_delete
+        context.can_modify = can_modify
 
         return next(root, info, **args)
