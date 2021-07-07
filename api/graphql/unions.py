@@ -16,7 +16,7 @@ from .objects import (
 
 class ProctectedUsers(Union):
     class Meta:
-        types = (UsersObject, ErrorObject)
+        types = (PaginatedUsersObject, ErrorObject)
 
 
 class ProtectedLinks(Union):

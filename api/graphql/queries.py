@@ -22,6 +22,7 @@ from .objects import (
     LinksObject1,
     OverviewObjects,
     PaginatedLinksObject,
+    PaginatedUsersObject,
     UsersObject,
     UsersObject1,
     LinksObject,
@@ -77,16 +78,43 @@ class Query(ObjectType):
         return Users.query.all()
 
     ########################USERS########################################
+    total_users = Int(required=True)
 
-    get_all_users = List(ProctectedUsers)
-
-    def resolve_get_all_users(root, info):
-        data = []
-        if is_valid_user(USER_TYPES.get("USER")):
-            data = UsersObject.get_query(info).all()
+    def resolve_total_users(root, info):
+        if info.context.admin():
+            return Users.query.count()
         else:
-            data = [ErrorObject(message=MESSAGES.get("NO_ACCESS"))]
-        return data
+            return -1
+
+    get_all_users = Field(ProctectedUsers, page=Int(),
+                          per_page=Int(), search=String())
+
+    def resolve_get_all_users(root, info, page=None, per_page=None, search=None):
+
+        if info.context.admin():
+            try:
+                if not page:
+                    page = 1
+                if not per_page:
+                    per_page = ITEMS_PER_PAGE
+
+                result = UsersObject.get_query(info)
+                if search:
+                    result = result.filter(Users.username.ilike(
+                        f"%{search}%") | Users.email.ilike(f"%{search}"))
+
+                result = result.order_by(Users.join_date.desc())
+                result = result.paginate(page=page, per_page=per_page)
+                return PaginatedUsersObject(page=result.page,
+                                            per_page=per_page,
+                                            total=result.total,
+                                            users=result.items)
+
+            except Exception as e:
+                print(f"GetAllUsersError: {e}")
+                return ErrorObject(message=MESSAGES.get("FETCH_USERS_ERROR"))
+        else:
+            return ErrorObject(message=MESSAGES.get("NO_ACCESS"))
 
     get_user = Field(ProctectedUsers, username_or_email=String(required=True))
 
@@ -130,16 +158,40 @@ class Query(ObjectType):
 
         return total
 
-    get_all_links = List(ProtectedLinks,
-                         page=ID(),
-                         per_page=ID(),
-                         search=String(),)
+    get_all_links = Field(ProtectedLinks,
+                          page=Int(),
+                          per_page=Int(),
+                          search=String(),)
 
     def resolve_get_all_links(root, info, page=None, per_page=None, search=None):
-        if is_valid_user(USER_TYPES.get("USER")):
-            return LinksObject.get_query(info).all()
+        if info.context.admin():
+            if not page:
+                page = 1
+            if not per_page:
+                per_page = ITEMS_PER_PAGE
+
+            try:
+                result = None
+                if not search:
+                    result = LinksObject.get_query(info)
+                else:
+                    result = LinksObject.get_query(info).filter(Links.short_link.ilike(
+                        f"%{search}$") | Links.original_link.ilike(f"%{search}%"))
+
+                result = result.order_by(Links.created_at.desc())
+                result = result.paginate(page=page, per_page=per_page)
+
+                return PaginatedLinksObject(page=result.page,
+                                            per_page=per_page,
+                                            total=result.total,
+                                            links=result.items
+                                            )
+            except Exception as e:
+                print(f"FetchLinksAdminError: {e}")
+                return ErrorObject(message=MESSAGES.get("FETCH_LINK_FAILED"))
+
         else:
-            return [ErrorObject(message=MESSAGES.get("NO_ACCESS"))]
+            return ErrorObject(message=MESSAGES.get("NO_ACCESS"))
 
     get_link_by_id = Field(ProtectedLinks, id=ID(required=True))
 
