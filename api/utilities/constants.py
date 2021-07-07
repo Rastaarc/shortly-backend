@@ -28,6 +28,8 @@ ITEMS_PER_PAGE = 10
 
 MESSAGES = {
     "NO_ACCESS": "Sorry, you don't have access to this operation(s)",
+    "FETCH_USERS_ERROR": "An error occurred while fetching the users data",
+    "FETCH_LINK_FAILED": "An error occurred while fetching the links",
     "_LINK_CREATED_SUC": "Your link has been created successfully",
     "_LINK_CREATED_ERR": "Failed to create your link, please try again later",
     "NEW_ACCOUNT_SUCCESS": "New Account created successfully",

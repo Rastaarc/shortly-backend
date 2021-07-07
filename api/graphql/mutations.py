@@ -100,6 +100,33 @@ class CreateAccount(graphene.Mutation):
         return CreateAccount(user=user, ok=ok, message=message)
 
 
+class DeleteUser(graphene.Mutation):
+    class Arguments:
+        id = graphene.Int(required=True)
+
+    status = graphene.Boolean(required=True)
+    message = graphene.String(required=True)
+
+    def mutate(root, info, id):
+        message = MESSAGES.get('DELETE_SUCC')
+        status = False
+        if info.context.admin():
+            try:
+                user = Users.query.filter_by(id=id).first()
+                if user:
+                    db.session.delete(user)
+                    db.session.commit()
+                    status = True
+            except Exception as e:
+                print(f"DeleteUserError: {e}")
+                message = MESSAGES.get('DELETE_ERR')
+        else:
+            status = False
+            message = MESSAGES.get('NO_ACCESS')
+
+        return DeleteUser(status=status, message=message)
+
+
 class LoginUser(graphene.Mutation):
     class Arguments:
         username_or_email = graphene.String(required=True)
@@ -297,7 +324,10 @@ class UpdateLink(graphene.Mutation):
 
 class Mutations(graphene.ObjectType):
     create_account = CreateAccount.Field()
+    delete_user = DeleteUser.Field()
+
     login_account = LoginUser.Field()
+
     create_premium_link = CreateLinkByUser.Field()
     create_freemium_link = CreateShortLinkFree.Field()
     delete_link = DeleteLink.Field()
